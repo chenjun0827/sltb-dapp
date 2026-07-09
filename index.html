@@ -254,15 +254,10 @@ async function completeLogin(){
   document.getElementById('homeLogged').style.display='block';
   const s=userAddr.slice(0,6)+'...'+userAddr.slice(-4);
   document.getElementById('homeWalletDisplay').textContent='钱包: '+s;
-  document.getElementById('profileFullAddr').textContent=userAddr;
   
-  // 推荐关系
-  const r=walletUsers[userAddr]?.referrer;
-  const isF=walletUsers[userAddr]?.isFounder;document.getElementById('refInfo').innerHTML=isF?'<span>👑 创始人账号</span>':r?'<span>💰 推荐人: '+r.slice(0,6)+'...'+r.slice(-4)+'</span>':'<span>自主注册（无推荐人）</span>';
+
   
   // 商家
-  if(mStore?.addr===userAddr&&merchants[userAddr])showMerchantPanel();
-  else{document.getElementById('merchantAuth').innerHTML='<div class="card auth-card"><div class="logo">🏪</div><h2>成为商家</h2><p>登录后即可开通</p><button class="btn btn-primary btn-block" onclick="openMerchant()">开通商家</button></div>'}
   
   updateBalance();
   document.getElementById('inviteCard').style.display='block';
