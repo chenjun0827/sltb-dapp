@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>链淘积分 - 购物返利</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f0f2f5;color:#2c3e50;padding-bottom:70px}
+.header{background:#1a1a2e;color:#e8e8e8;padding:16px 20px;position:sticky;top:0;z-index:100}
+.header h1{font-size:20px;font-weight:600}.header p{font-size:12px;opacity:.7;margin-top:2px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;justify-content:space-around;align-items:center;padding:8px 0 12px;border-top:1px solid #e8e8e8;z-index:200}
+.nav-item{text-align:center;font-size:11px;color:#999;cursor:pointer;padding:4px 12px}
+.nav-item.active{color:#2c3e50;font-weight:600}.nav-item .icon{font-size:22px;display:block;margin-bottom:2px}
+.page{display:none;padding:16px}.page.active{display:block}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.section-title{font-size:16px;font-weight:600;margin:16px 0 12px;color:#2c3e50}
+.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.product-card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.product-card .img-placeholder{height:140px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:40px}
+.product-card .info{padding:10px 12px 14px}
+.product-card .name{font-size:14px;font-weight:500;margin-bottom:4px;color:#2c3e50}
+.product-card .price{font-size:18px;font-weight:700;color:#e67e22}
+.product-card .price span{font-size:12px;font-weight:400;color:#999}
+.product-card .rebate{font-size:12px;color:#27ae60;margin-top:4px}
+.btn{display:inline-block;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:500;border:none;cursor:pointer;text-align:center}
+.btn-primary{background:#2c3e50;color:#fff}.btn-primary-o{background:#e67e22;color:#fff}
+.btn-outline{background:transparent;border:1px solid #2c3e50;color:#2c3e50}.btn-block{display:block;width:100%}
+.btn-sm{padding:6px 14px;font-size:12px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;color:#666;margin-bottom:4px;font-weight:500}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none}
+.form-group input:focus{border-color:#2c3e50}
+.balance{font-size:32px;font-weight:700;color:#e67e22}.balance-label{font-size:13px;color:#999}
+.menu-item{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #f0f0f0;cursor:pointer}
+.menu-item:last-child{border-bottom:none}.menu-item .left{display:flex;align-items:center;gap:10px}
+.menu-item .left .mi-icon{font-size:20px}.menu-item .right{color:#ccc;font-size:16px}
+.badge{padding:2px 10px;border-radius:20px;font-size:12px;display:inline-block}
+.badge-pending{background:#fef3cd;color:#856404}.badge-pass{background:#d4edda;color:#155724}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:300;display:flex;align-items:center;justify-content:center}
+.modal-content{background:#fff;border-radius:12px;padding:24px;width:85%;max-width:380px;max-height:80vh;overflow-y:auto}
+.modal-content h2{font-size:18px;margin-bottom:16px;color:#2c3e50}
+.wallet-addr{font-size:11px;color:#999;word-break:break-all;font-family:monospace;margin-top:4px}
+.empty-state{text-align:center;padding:40px 20px;color:#999;font-size:14px}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px;display:block}
+.auth-card{padding:32px 20px;text-align:center}
+.auth-card .logo{font-size:48px;margin-bottom:12px}.auth-card h2{font-size:20px;margin-bottom:4px}
+.auth-card p{color:#999;font-size:13px;margin-bottom:24px}
+.text-center{text-align:center}.mt-8{margin-top:8px}.mt-12{margin-top:12px}.gap-8{display:flex;gap:8px}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.tab-bar{display:flex;background:#fff;border-radius:10px;overflow:hidden;margin-bottom:12px}
+.tab-bar .tab{flex:1;text-align:center;padding:10px;font-size:13px;cursor:pointer;color:#999}
+.tab-bar .tab.active{background:#2c3e50;color:#fff;font-weight:500}
+.order-item{padding:12px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+.order-item:last-child{border-bottom:none}.order-item .top{display:flex;justify-content:space-between}
+.order-item .bottom{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="header"><h1>链淘积分</h1><p>购物返利 · 去中心化交易</p></div>
+<!-- 首页 -->
+<div class="page active" id="page-home">
+  <div id="homeNotLogged">
+    <div class="card auth-card">
+      <div class="logo" id="refBadge">🪙</div>
+      <h2 id="homeGreeting">欢迎来到链淘积分</h2>
+      <p id="homeSubtitle">连接钱包，开启购物返利之旅</p>
+      <button class="btn btn-primary btn-block mt-12" onclick="connectWallet()">👛 连接钱包</button>
+      <p class="mt-12" style="font-size:12px;color:#999">首次连接 = 自动注册</p>
+    </div>
+  </div>
+  <div id="homeLogin" style="display:none">
+    <div class="card auth-card">
+      <div class="logo">🔑</div>
+      <h2>登录验证</h2>
+      <p>钱包 <span id="loginAddr" style="font-family:monospace;font-size:11px">0x...</span></p>
+      <div class="form-group" style="text-align:left"><label>输入密码</label><input type="password" id="loginPass" placeholder="输入密码"></div>
+      <button class="btn btn-primary btn-block mt-8" onclick="verifyPassword()">确认登录</button>
+      <p class="mt-12" style="font-size:12px;color:#e74c3c">首次使用请先连接钱包注册</p>
+    </div>
+  </div>
+  <div id="homeLogged" style="display:none">
+    <div class="card" style="text-align:center;padding:20px">
+      <div style="font-size:40px;margin-bottom:8px">🪙</div>
+      <div style="font-size:13px;color:#999">SLTB 价格</div>
+      <div class="balance" id="sltbPrice">1.00</div>
+      <div style="font-size:13px;color:#999">USDT</div>
+      <div class="wallet-addr mt-8" id="homeWalletDisplay">--</div>
+      <div class="card mt-12" style="background:#f8f9fa;padding:10px;margin-bottom:0">
+        <div style="display:flex;justify-content:space-around;font-size:13px">
+          <div><div style="color:#999;font-size:11px">SLTB 余额</div><strong id="homeSltbBal">--</strong></div>
+          <div><div style="color:#999;font-size:11px">USDT 余额</div><strong id="homeUsdtBal">--</strong></div>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm mt-8" onclick="switchPage('profile')">我的主页</button>
+    </div>
+    <div class="section-title">快速入口</div>
+    <div class="card">
+      <div class="menu-item" onclick="switchPage('shop')"><div class="left"><span class="mi-icon">🛍️</span> 逛商城</div><div class="right">›</div></div>
+      <div class="menu-item" onclick="showModal('buySLTB')"><div class="left"><span class="mi-icon">💎</span> 购买 SLTB</div><div class="right">›</div></div>
+      <div class="menu-item" onclick="showModal('sellSLTB')"><div class="left"><span class="mi-icon">💱</span> 出售 SLTB</div><div class="right">›</div></div>
+      <div class="menu-item" onclick="switchPage('merchant')"><div class="left"><span class="mi-icon">🏪</span> 商家入驻</div><div class="right">›</div></div>
+    </div>
+    <div class="section-title">最新动态</div>
+    <div class="card" style="font-size:13px;color:#666;line-height:1.6">🎉 SLTB/USDT 流动性池已创建<br>📦 首批商家入驻进行中<br>💰 购物即享SLTB奖励</div>
+  </div>
+</div>
+<!-- 商城 -->
+<div class="page" id="page-shop"><div class="section-title">商品列表</div><div id="shopProducts"><div class="empty-state"><span class="empty-icon">📦</span>暂无商品</div></div></div>
+<!-- 商家 -->
+<div class="page" id="page-merchant">
+  <div id="merchantAuth"><div class="card auth-card"><div class="logo">🏪</div><h2>商家中心</h2><p>需要先登录</p><button class="btn btn-primary btn-block" onclick="switchPage('home')">去首页登录</button></div></div>
+  <div id="merchantPanel" style="display:none">
+    <div class="card">
+      <div class="flex-between"><span><strong id="merchantName">商家</strong></span><span class="badge badge-pass" id="merchantKycBadge">待认证</span></div>
+      <div class="wallet-addr mt-8" id="merchantAddrDisplay">--</div>
+      <button class="btn btn-outline btn-block mt-12" onclick="merchantLogout()">退出商家</button>
+    </div>
+    <div class="tab-bar"><div class="tab active" onclick="merchantTab(this,'info')">商家信息</div><div class="tab" onclick="merchantTab(this,'add')">上架商品</div><div class="tab" onclick="merchantTab(this,'orders')">订单管理</div></div>
+    <div id="merchantInfo">
+      <div class="card">
+        <div class="form-group"><label>推广钱包 A（短视频/推广渠道）</label><input type="text" id="mAWallet" placeholder="0x..."></div>
+        <div class="form-group"><label>A 分成比例（%）</label><input type="number" id="mAPercent" placeholder="如 3" min="0" max="100"></div>
+        <div class="form-group"><label>介绍人钱包 B</label><input type="text" id="mBWallet" placeholder="0x..."></div>
+        <div class="form-group"><label>B 分成比例（%）</label><input type="number" id="mBPercent" placeholder="如 2" min="0" max="100"></div>
+        <div class="form-group"><label>KYC 认证信息</label><textarea id="mKyc" placeholder="上传身份证/营业执照等信息" rows="3"></textarea></div>
+        <p style="font-size:12px;color:#e74c3c">⚠️ KYC提交后不可修改</p>
+        <button class="btn btn-primary btn-block mt-8" onclick="saveMerchantInfo()">保存信息</button>
+      </div>
+    </div>
+    <div id="merchantAdd" style="display:none"><div class="card">
+      <div class="form-group"><label>商品名称</label><input type="text" id="pName" placeholder="输入名称"></div>
+      <div class="form-group"><label>价格 (USDT)</label><input type="number" id="pPrice" placeholder="如 10"></div>
+      <div class="form-group"><label>返利比例 (%)</label><input type="number" id="pRebate" value="25"></div>
+      <div class="form-group"><label>分类</label><select id="pCat"><option>数码</option><option>服饰</option><option>食品</option><option>家居</option><option>其他</option></select></div>
+      <div class="form-group"><label>淘宝链接</label><input type="url" id="pLink" placeholder="链接或描述"></div>
+      <button class="btn btn-primary btn-block" onclick="addProduct()">上架</button>
+    </div></div>
+    <div id="merchantOrders" style="display:none"><div class="empty-state"><span class="empty-icon">📋</span>暂无订单</div></div>
+  </div>
+</div>
+<!-- 订单 -->
+<div class="page" id="page-orders"><div class="section-title">我的订单</div><div id="orderList"><div class="empty-state"><span class="empty-icon">📋</span>暂无订单</div></div></div>
+<!-- 我的 -->
+<div class="page" id="page-profile">
+  <div id="profileNotLogged"><div class="card auth-card"><div class="logo">👤</div><h2>请先登录</h2><button class="btn btn-primary btn-block" onclick="switchPage('home')">去首页登录</button></div></div>
+  <div id="profileLogged" style="display:none">
+    <div class="card" style="text-align:center;padding:16px">
+      <div style="font-size:40px;margin-bottom:4px">👤</div>
+      <div class="wallet-addr" id="profileFullAddr">0x...</div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin:0 0 8px;font-size:18px">🔗 邀请链接</div>
+      <p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:12px">分享链接给好友，他们注册后你获得返利！</p>
+      <div class="form-group"><input type="text" id="myInviteLink" readonly onclick="this.select()" style="font-size:12px;font-family:monospace;width:100%;padding:8px;border:1px solid #ddd;border-radius:6px"></div>
+      <button class="btn btn-primary btn-block" onclick="copyInviteLink()">📋 复制</button>
+    </div>
+    <div class="card"><div class="section-title" style="margin:0">推荐关系</div><div id="refInfo" style="font-size:13px;color:#666;padding:8px 0"></div></div>
+    <button class="btn btn-outline btn-block" onclick="logout()">退出登录</button>
+  </div>
+</div>
+<!-- 底部导航 -->
+<div class="bottom-nav">
+<div class="nav-item active" onclick="switchPage('home')"><span class="icon">🏠</span>首页</div>
+<div class="nav-item" onclick="switchPage('shop')"><span class="icon">🛍️</span>商城</div>
+<div class="nav-item" onclick="switchPage('merchant')"><span class="icon">🏪</span>商家</div>
+<div class="nav-item" onclick="switchPage('orders')"><span class="icon">📋</span>订单</div>
+<div class="nav-item" onclick="switchPage('profile')"><span class="icon">👤</span>我的</div>
+</div>
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal(event)"><div class="modal-content" id="modalContent" onclick="event.stopPropagation()"></div></div>
+<script>
+const CONTRACT='0xd2f357A47A075C46889c4dF11440ACF1C371E555';const USDT='0x55d398326f99059ff775485246999027b3197955';const USDT_ABI=['function balanceOf(address) view returns (uint256)','function decimals() view returns (uint8)'];
+const ABI=['function name()','function symbol()','function decimals() view returns (uint8)','function totalSupply() view returns (uint256)','function balanceOf(address) view returns (uint256)','function transfer(address,uint256) returns (bool)','function transferFrom(address,address,uint256) returns (bool)','function approve(address,uint256) returns (bool)'];
+let provider,signer,contract,userAddr,userPass;
+let walletUsers=JSON.parse(localStorage.getItem('sltbWalletUsers')||'{}');
+let currentAddr=localStorage.getItem('sltbCurrentAddr');
+let products=JSON.parse(localStorage.getItem('sltbProducts')||'[]');
+let orders=JSON.parse(localStorage.getItem('sltbOrders')||'[]');
+let merchants=JSON.parse(localStorage.getItem('sltbMerchants')||'{}');
+let mStore=JSON.parse(localStorage.getItem('sltbMerchant')||'null');
+const refAddr=new URLSearchParams(window.location.search).get('ref');
+
+function switchPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  const idx=['home','shop','merchant','orders','profile'].indexOf(n);
+  if(idx>=0)document.querySelector('.nav-item:nth-child('+(idx+1)+')').classList.add('active');
+}
+
+// === 钱包连接 ===
+async function connectWallet(){
+  if(!window.ethereum)return alert('请使用 TP 钱包');
+  try{
+    provider=new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send('eth_requestAccounts',[]);
+    signer=provider.getSigner();
+    userAddr=await signer.getAddress().then(a=>a.toLowerCase());currentAddr=null;
+    contract=new ethers.Contract(CONTRACT,ABI,provider);
+    
+    // 检查是否已注册
+    if(walletUsers[userAddr]){
+      // 已有账号，显示登录密码框
+      document.getElementById('homeNotLogged').style.display='none';
+      document.getElementById('homeLogin').style.display='block';
+      document.getElementById('loginAddr').textContent=userAddr.slice(0,6)+'...'+userAddr.slice(-4);
+      document.getElementById('loginPass').value='';
+      userPass=walletUsers[userAddr].password;
+    }else{
+      document.getElementById('homeNotLogged').style.display='none';
+      const mc=document.getElementById('modalContent');
+      document.getElementById('modalOverlay').style.display='flex';
+      mc.innerHTML='<h2>🎉 首次注册</h2><p style="font-size:13px;color:#666;margin-bottom:16px">连接成功！请设置登录密码</p><div class="form-group"><label>设置密码</label><input type="password" id="newPass1" placeholder="至少3位" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none"></div><div class="form-group"><label>确认密码</label><input type="password" id="newPass2" placeholder="再次输入" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none"></div><button class="btn btn-primary btn-block" onclick="registerNewUser()">完成注册</button>';
+      return;
+    }
+  }catch(e){alert('连接失败: '+e.message)}
+}
+
+function registerNewUser(){
+  const p1=document.getElementById('newPass1')?.value;
+  const p2=document.getElementById('newPass2')?.value;
+  if(!p1||p1.length<3)return alert('密码至少3位');
+  if(p1!==p2)return alert('两次密码不一致');
+  document.getElementById('modalOverlay').style.display='none';
+  const founderAddrs=['0x54f26192f38a541c7ac2e4016ef85718adfbb189','0x54d710c4f9aba58d7cdee2799ffde497944198af','0xb450af45e951dbc660077c732a20f27b1e47c416'];
+  const isFounder=founderAddrs.includes(userAddr);
+  walletUsers[userAddr]={password:p1,referrer:isFounder?'创始人':refAddr||'',isFounder:isFounder,created:Date.now()};
+  localStorage.setItem('sltbWalletUsers',JSON.stringify(walletUsers));
+  userPass=p1;
+  completeLogin();
+}
+
+function verifyPassword(){
+  const p=document.getElementById('loginPass').value;
+  if(!userPass)return alert('请先连接钱包');
+  if(p===userPass){completeLogin();return}
+  alert('密码错误');
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginPass').focus();
+}
+
+async function completeLogin(){
+  if(!provider&&window.ethereum){provider=new ethers.providers.Web3Provider(window.ethereum);contract=new ethers.Contract(CONTRACT,ABI,provider)}
+  if(!userAddr){try{const a=await provider.listAccounts();if(a.length>0)userAddr=a[0].toLowerCase()}catch(e){}}
+  currentAddr=userAddr;
+  document.getElementById('homeNotLogged').style.display='none';
+  document.getElementById('homeLogin').style.display='none';
+  document.getElementById('homeLogged').style.display='block';
+  const s=userAddr.slice(0,6)+'...'+userAddr.slice(-4);
+  document.getElementById('homeWalletDisplay').textContent='钱包: '+s;
+  document.getElementById('profileAddrShort').textContent=s;
+  document.getElementById('profileFullAddr').textContent=userAddr;
+  
+  // 推荐关系
+  const r=walletUsers[userAddr]?.referrer;
+  const isF=walletUsers[userAddr]?.isFounder;document.getElementById('refInfo').innerHTML=isF?'<span>👑 创始人账号</span>':r?'<span>💰 推荐人: '+r.slice(0,6)+'...'+r.slice(-4)+'</span>':'<span>自主注册（无推荐人）</span>';
+  
+  // 商家
+  if(mStore?.addr===userAddr&&merchants[userAddr])showMerchantPanel();
+  else{document.getElementById('merchantAuth').innerHTML='<div class="card auth-card"><div class="logo">🏪</div><h2>成为商家</h2><p>登录后即可开通</p><button class="btn btn-primary btn-block" onclick="openMerchant()">开通商家</button></div>'}
+  
+  updateBalance();
+}
+
+
+
+function copyInviteLink(){
+  const i=document.getElementById('myInviteLink');
+  if(!i||!i.value)return;
+  i.select();
+  document.execCommand('copy');
+  alert('已复制！分享给好友即可');
+}
+
+function logout(){
+  localStorage.removeItem('sltbCurrentAddr');
+  localStorage.removeItem('sltbCurrentUser');
+  currentAddr=null;userAddr=null;provider=null;
+  document.getElementById('homeLogged').style.display='none';
+  document.getElementById('homeLogin').style.display='none';
+  document.getElementById('homeNotLogged').style.display='block';
+  document.getElementById('profileLogged').style.display='none';
+  document.getElementById('profileNotLogged').style.display='block';
+  document.getElementById('merchantPanel').style.display='none';
+  document.getElementById('merchantAuth').style.display='block';
+}
+
+let usdtContract;
+async function updateBalance(){
+  if(!userAddr||!contract)return;
+  document.getElementById('homeSltbBal').textContent='查询中...';
+  document.getElementById('homeUsdtBal').textContent='查询中...';
+  try{
+    const b=await contract.balanceOf(userAddr);
+    const sltbVal=parseFloat(ethers.utils.formatEther(b));
+    document.getElementById('homeSltbBal').textContent=sltbVal.toFixed(2);
+  }catch(e){document.getElementById('homeSltbBal').textContent='0.00';console.log('SLTB err',e)}
+  try{
+    const sltbBal2=await contract.balanceOf(POOL);
+    const usdtBal2=await usdtContract.balanceOf(POOL);
+    const s=parseFloat(ethers.utils.formatEther(sltbBal2));
+    const u=parseFloat(ethers.utils.formatUnits(usdtBal2,await usdtContract.decimals()));
+    document.getElementById('sltbPrice').textContent=s>0?(u/s).toFixed(4):'0.0000';
+  }catch(e){document.getElementById('sltbPrice').textContent='1.00';console.log('价格err',e)}
+  try{
+    if(!usdtContract)usdtContract=new ethers.Contract(USDT,USDT_ABI,provider);
+    const u=await usdtContract.balanceOf(userAddr);
+    const d=await usdtContract.decimals();
+    document.getElementById('homeUsdtBal').textContent=parseFloat(ethers.utils.formatUnits(u,d)).toFixed(2);
+  }catch(e){document.getElementById('homeUsdtBal').textContent='0.00';console.log('USDT err',e)}
+}
+
+// === 商家 ===
+function openMerchant(){
+  merchants[userAddr]={addr:userAddr,kyc:false,aWallet:'',aPercent:0,bWallet:'',bPercent:0,created:Date.now()};
+  localStorage.setItem('sltbMerchants',JSON.stringify(merchants));
+  mStore={addr:userAddr};
+  localStorage.setItem('sltbMerchant',JSON.stringify(mStore));
+  showMerchantPanel();
+}
+
+function showMerchantPanel(){
+  document.getElementById('merchantAuth').style.display='none';
+  document.getElementById('merchantPanel').style.display='block';
+  const m=merchants[userAddr]||{};
+  document.getElementById('merchantAddrDisplay').textContent=userAddr;
+  document.getElementById('merchantKycBadge').textContent=m.kyc?'已认证':'待认证';
+  document.getElementById('merchantKycBadge').className='badge '+(m.kyc?'badge-pass':'badge-pending');
+  // 填充已有信息
+  document.getElementById('mAWallet').value=m.aWallet||'';
+  document.getElementById('mAPercent').value=m.aPercent||'';
+  document.getElementById('mBWallet').value=m.bWallet||'';
+  document.getElementById('mBPercent').value=m.bPercent||'';
+  document.getElementById('mKyc').value=m.kycInfo||'';
+  document.getElementById('mKyc').disabled=!!m.kyc;
+  renderMProds();renderMOrds();
+}
+
+function merchantLogout(){localStorage.removeItem('sltbMerchant');mStore=null;location.reload()}
+function merchantTab(el,t){el.parentElement.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));el.classList.add('active');document.getElementById('merchantInfo').style.display=t==='info'?'block':'none';document.getElementById('merchantAdd').style.display=t==='add'?'block':'none';document.getElementById('merchantOrders').style.display=t==='orders'?'block':'none'}
+
+function saveMerchantInfo(){
+  const m=merchants[userAddr]||{};
+  if(m.kyc&&document.getElementById('mKyc').value!==m.kycInfo)return alert('KYC已认证，不可修改');
+  m.aWallet=document.getElementById('mAWallet').value.trim();
+  m.aPercent=parseFloat(document.getElementById('mAPercent').value)||0;
+  m.bWallet=document.getElementById('mBWallet').value.trim();
+  m.bPercent=parseFloat(document.getElementById('mBPercent').value)||0;
+  const kyc=document.getElementById('mKyc').value.trim();
+  if(kyc&&!m.kyc){m.kyc=true;m.kycInfo=kyc}
+  merchants[userAddr]=m;
+  localStorage.setItem('sltbMerchants',JSON.stringify(merchants));
+  document.getElementById('merchantKycBadge').textContent=m.kyc?'已认证':'待认证';
+  document.getElementById('merchantKycBadge').className='badge '+(m.kyc?'badge-pass':'badge-pending');
+  if(m.kyc)document.getElementById('mKyc').disabled=true;
+  alert('保存成功！');
+}
+
+// === 商品 ===
+function addProduct(){
+  if(!mStore)return alert('请先开通商家');
+  const n=document.getElementById('pName').value.trim(),pr=parseFloat(document.getElementById('pPrice').value),r=parseFloat(document.getElementById('pRebate').value)||25,cat=document.getElementById('pCat').value,link=document.getElementById('pLink').value.trim();
+  if(!n||!pr)return alert('请填写名称和价格');
+  products.push({id:Date.now(),merchant:userAddr,name:n,price:pr,rebate:r,cat,link,created:Date.now()});
+  localStorage.setItem('sltbProducts',JSON.stringify(products));
+  renderMProds();renderShop();
+  document.getElementById('pName').value='';document.getElementById('pPrice').value='';document.getElementById('pLink').value='';
+  alert('上架成功！')
+}
+
+function renderMProds(){
+  const el=document.getElementById('merchantList')||{innerHTML:''};
+  if(!el.innerHTML)return;
+  const mine=products.filter(p=>p.merchant===userAddr);
+  el.innerHTML=mine.length?mine.map(p=>'<div class="product-card" style="margin-bottom:10px"><div class="info"><div class="name">'+p.name+'</div><div class="price">'+p.price+'<span> USDT</span></div><div class="rebate">返利 '+p.rebate+'%</div></div></div>').join(''):'<div class="empty-state"><span class="empty-icon">📦</span>暂无商品</div>'
+}
+
+function renderMOrds(){
+  const el=document.getElementById('merchantOrders');
+  const mine=orders.filter(o=>o.merchant===userAddr);
+  el.innerHTML=mine.length?mine.map(o=>'<div class="order-item"><div class="top"><span>#'+o.id+'</span><span class="badge badge-pending">待处理</span></div><div class="bottom"><span>'+o.product+'</span><span>'+o.amount+' USDT</span></div></div>').join(''):'<div class="empty-state"><span class="empty-icon">📋</span>暂无订单</div>'
+}
+
+function renderShop(){
+  const el=document.getElementById('shopProducts');
+  if(!products.length){el.innerHTML='<div class="empty-state"><span class="empty-icon">📦</span>暂无商品</div>';return}
+  el.innerHTML='<div class="product-grid">'+products.map(p=>'<div class="product-card"><div class="img-placeholder">🛍️</div><div class="info"><div class="name">'+p.name+'</div><div class="price">'+p.price+'<span> USDT</span></div><div class="rebate">返利 '+p.rebate+'%</div><button class="btn btn-primary-o btn-block btn-sm mt-8" onclick="buyProduct('+p.id+')">立即购买</button></div></div>').join('')+'</div>'
+}
+
+function buyProduct(id){
+  if(!userAddr)return connectWallet();
+  if(!confirm('确认购买？请在TP钱包完成支付'))return;
+  const p=products.find(x=>x.id===id);if(!p)return;
+  orders.push({id:Date.now(),product:p.name,amount:p.price,merchant:p.merchant,user:userAddr,status:'pending',created:Date.now()});
+  localStorage.setItem('sltbOrders',JSON.stringify(orders));renderOrders();alert('订单已创建！')
+}
+
+function renderOrders(){
+  const el=document.getElementById('orderList'),mine=userAddr?orders.filter(o=>o.user===userAddr):[];
+  el.innerHTML=mine.length?mine.map(o=>'<div class="card"><div class="order-item"><div class="top"><span>'+o.product+'</span><span class="badge badge-pending">待处理</span></div><div class="bottom"><span>商家: '+o.merchant.slice(0,6)+'...'+(o.merchant.slice(-4)||'')+'</span><span>'+o.amount+' USDT</span></div></div></div>').join(''):'<div class="empty-state"><span class="empty-icon">📋</span>暂无订单</div>'
+}
+
+// === 弹窗 ===
+function showModal(t){
+  const c=document.getElementById('modalContent');
+  document.getElementById('modalOverlay').style.display='flex';
+  if(t==='buySLTB')c.innerHTML='<h2>💎 购买 SLTB</h2><div class="form-group"><label>金额 (USDT)</label><input type="number" id="buyAmount" placeholder="输入USDT数量" min="0.01" step="0.01"></div><p style="font-size:13px;color:#666">价格: 1.00 USDT/SLTB</p><button class="btn btn-primary btn-block mt-12" onclick="alert(\'请在TP钱包完成交易\')">确认购买</button>';
+  else if(t==='sellSLTB')c.innerHTML='<h2>💱 出售 SLTB</h2><div class="form-group"><label>数量 (SLTB)</label><input type="number" id="sellAmount" placeholder="输入数量" min="0.01" step="0.01"></div><p style="font-size:12px;color:#e74c3c">⚠️ 卖出扣除滑点</p><button class="btn btn-primary btn-block mt-12" onclick="alert(\'请在TP钱包完成交易\')">确认出售</button>';
+  else if(t==='transfer')c.innerHTML='<h2>✈️ 转账 SLTB</h2><div class="form-group"><label>接收地址</label><input type="text" id="transferTo" placeholder="0x..."></div><div class="form-group"><label>数量</label><input type="number" id="transferAmount" placeholder="输入数量"></div><p style="font-size:12px;color:#e74c3c">⚠️ 转账扣除滑点</p><button class="btn btn-primary btn-block mt-12" onclick="alert(\'请在TP钱包确认交易\')">确认转账</button>';
+  else if(t==='referral'){const l=window.location.origin+window.location.pathname+'?ref='+userAddr;c.innerHTML='<h2>🔗 邀请好友</h2><p style="font-size:13px;color:#666;line-height:1.6">好友通过你的链接注册，他们购物或买SLTB时你将获得12.5% SLTB返利！</p><div class="form-group mt-12"><label>你的邀请链接</label><input type="text" value="'+l+'" readonly onclick="this.select()"></div><button class="btn btn-primary btn-block" onclick="var i=document.querySelector(\'#modalContent input\');i.select();document.execCommand(\'copy\');alert(\'已复制\')">复制链接</button>'}
+}
+
+function closeModal(e){if(e.target.id==='modalOverlay')document.getElementById('modalOverlay').style.display='none'}
+
+// === 初始化 ===
+renderShop();renderOrders();
+
+// 显示推荐链接提示
+if(refAddr)document.getElementById('homeGreeting').textContent='通过邀请链接加入 🎉';
+
+// 删除自动检测功能 - 用户必须点击连接按钮
+// (空函数保留占位)
+async function autoConnect(){}
+autoConnect();
+</script>
+</body>
+</html>
