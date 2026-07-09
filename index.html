@@ -86,6 +86,18 @@
       <div class="balance" id="sltbPrice">1.00</div>
       <div style="font-size:13px;color:#999">USDT</div>
       <div class="wallet-addr mt-8" id="homeWalletDisplay">--</div>
+    </div>
+    <div class="card" id="inviteCard" style="text-align:center;padding:12px;border:2px dashed #3498db;cursor:pointer;display:none" onclick="showInvite()">
+      <div style="font-size:14px;color:#3498db;font-weight:600">📋 点我复制邀请链接</div>
+      <div style="font-size:11px;color:#999;margin-top:4px">分享给朋友，他们注册后你赚返利!</div>
+    </div>
+    <div class="card" style="text-align:center;padding:16px">
+      <div style="display:flex;justify-content:space-around;font-size:13px">
+        <div><div style="color:#999;font-size:11px">SLTB 余额</div><strong id="homeSltbBal">--</strong></div>
+        <div><div style="color:#999;font-size:11px">USDT 余额</div><strong id="homeUsdtBal">--</strong></div>
+      </div>
+    </div>
+    <div class="section-title">快速入口</div>
       <div class="card mt-12" style="background:#f8f9fa;padding:10px;margin-bottom:0">
         <div style="display:flex;justify-content:space-around;font-size:13px">
           <div><div style="color:#999;font-size:11px">SLTB 余额</div><strong id="homeSltbBal">--</strong></div>
@@ -202,6 +214,28 @@ function copyInviteLink(){
   alert("已复制！");
 }
 
+function showInvite(){
+  if(!userAddr)return;
+  const link=window.location.href.split("?")[0]+"?ref="+userAddr;
+  const mc=document.getElementById("modalContent");
+  document.getElementById("modalOverlay").style.display="flex";
+  mc.innerHTML='<h2 style="margin-bottom:12px">🔗 你的邀请链接</h2>'+
+    '<p style="font-size:13px;color:#666;margin-bottom:12px;line-height:1.6">分享给好友，他们通过此链接注册后，购物时你将获得返利！</p>'+
+    '<div style="background:#f0f4ff;border-radius:8px;padding:10px;word-break:break-all;font-size:12px;color:#2c3e50;font-family:monospace;margin-bottom:12px">'+link+'</div>'+
+    '<button class="btn btn-primary btn-block" onclick="doCopy()">📋 复制链接</button>'+
+    '<button class="btn btn-outline btn-block" onclick="closeModal()">关闭</button>';
+}
+
+function doCopy(){
+  const mc=document.getElementById("modalContent");
+  const txt=mc.querySelector("div[style*=\"background\"]")?.textContent;
+  if(!txt)return;
+  const ta=document.createElement("textarea");
+  ta.value=txt;document.body.appendChild(ta);ta.select();
+  document.execCommand("copy");document.body.removeChild(ta);
+  alert("✅ 已复制！可以分享给好友了");
+}
+
 function switchPage(n){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
@@ -300,6 +334,7 @@ function logout(){
   currentAddr=null;userAddr=null;provider=null;
   document.getElementById('homeLogged').style.display='none';
   document.getElementById('inviteBtn').style.display='none';
+  document.getElementById('inviteCard').style.display='none';
   document.getElementById('homeLogin').style.display='none';
   document.getElementById('homeNotLogged').style.display='block';
   document.getElementById('profileLogged').style.display='none';
