@@ -94,15 +94,7 @@
         <div><div style="color:#999;font-size:11px">USDT 余额</div><strong id="homeUsdtBal">--</strong></div>
       </div>
     </div>
-    <div class="section-title">快速入口</div>
-      <div class="card mt-12" style="background:#f8f9fa;padding:10px;margin-bottom:0">
-        <div style="display:flex;justify-content:space-around;font-size:13px">
-          <div><div style="color:#999;font-size:11px">SLTB 余额</div><strong id="homeSltbBal">--</strong></div>
-          <div><div style="color:#999;font-size:11px">USDT 余额</div><strong id="homeUsdtBal">--</strong></div>
-        </div>
-      </div>
 
-    </div>
     <div class="section-title">快速入口</div>
     <div class="card">
       <div class="menu-item" onclick="switchPage('shop')"><div class="left"><span class="mi-icon">🛍️</span> 逛商城</div><div class="right">›</div></div>
@@ -313,6 +305,7 @@ async function completeLogin(){
   else{document.getElementById('merchantAuth').innerHTML='<div class="card auth-card"><div class="logo">🏪</div><h2>成为商家</h2><p>登录后即可开通</p><button class="btn btn-primary btn-block" onclick="openMerchant()">开通商家</button></div>'}
   
   updateBalance();
+  document.getElementById('inviteCard').style.display='block';
 }
 
 
@@ -343,20 +336,10 @@ function logout(){
 let usdtContract;
 async function updateBalance(){
   if(!userAddr||!contract)return;
-  document.getElementById('homeSltbBal').textContent='查询中...';
-  document.getElementById('homeUsdtBal').textContent='查询中...';
   try{
     const b=await contract.balanceOf(userAddr);
-    const sltbVal=parseFloat(ethers.utils.formatEther(b));
-    document.getElementById('homeSltbBal').textContent=sltbVal.toFixed(2);
+    document.getElementById('homeSltbBal').textContent=parseFloat(ethers.utils.formatEther(b)).toFixed(2);
   }catch(e){document.getElementById('homeSltbBal').textContent='0.00';console.log('SLTB err',e)}
-  try{
-    const sltbBal2=await contract.balanceOf(POOL);
-    const usdtBal2=await usdtContract.balanceOf(POOL);
-    const s=parseFloat(ethers.utils.formatEther(sltbBal2));
-    const u=parseFloat(ethers.utils.formatUnits(usdtBal2,await usdtContract.decimals()));
-    document.getElementById('sltbPrice').textContent=s>0?(u/s).toFixed(4):'0.0000';
-  }catch(e){document.getElementById('sltbPrice').textContent='1.00';console.log('价格err',e)}
   try{
     if(!usdtContract)usdtContract=new ethers.Contract(USDT,USDT_ABI,provider);
     const u=await usdtContract.balanceOf(userAddr);
