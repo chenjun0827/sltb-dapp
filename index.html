@@ -100,13 +100,7 @@
       <div class="menu-item" onclick="switchPage('shop')"><div class="left"><span class="mi-icon">🛍️</span> 逛商城</div><div class="right">›</div></div>
       <div class="menu-item" onclick="showModal('buySLTB')"><div class="left"><span class="mi-icon">💎</span> 购买 SLTB</div><div class="right">›</div></div>
       <div class="menu-item" onclick="showModal('sellSLTB')"><div class="left"><span class="mi-icon">💱</span> 出售 SLTB</div><div class="right">›</div></div>
-      <div class="menu-item" onclick="genInvite()"><div class="left"><span class="mi-icon">🏪</span> 商家入驻</div><div class="right">›</div></div>
-    </div>
-    <div class="section-title">推荐有奖</div>
-    <div class="card" style="text-align:center;padding:12px;cursor:pointer" onclick="genInvite()">
-      <div style="font-size:32px;margin-bottom:4px">🔗</div>
-      <div style="font-size:13px;color:#2c3e50;font-weight:500">生成邀请链接</div>
-      <div style="font-size:11px;color:#999;margin-top:2px">分享给好友，一起赚钱</div>
+      <div class="menu-item" onclick="switchPage('merchant')"><div class="left"><span class="mi-icon">🏪</span> 商家入驻</div><div class="right">›</div></div>
     </div>
     <div class="section-title">最新动态</div>
     <div class="card" style="font-size:13px;color:#666;line-height:1.6">🎉 SLTB/USDT 流动性池已创建<br>📦 首批商家入驻进行中<br>💰 购物即享SLTB奖励</div>
@@ -168,21 +162,7 @@ let merchants=JSON.parse(localStorage.getItem('sltbMerchants')||'{}');
 let mStore=JSON.parse(localStorage.getItem('sltbMerchant')||'null');
 const refAddr=new URLSearchParams(window.location.search).get('ref');
 
-function genInvite(){
-  if(!userAddr)return;
-  const link=window.location.href.split("?")[0]+"?ref="+userAddr;
-  const mc=document.getElementById("modalContent");
-  document.getElementById("modalOverlay").style.display="flex";
-  mc.innerHTML='<h2>🔗 邀请链接</h2><p style="font-size:13px;color:#666;margin:12px 0">分享此链接，好友注册后你将获得返利！</p><div class="form-group"><textarea id="inviteLinkBox" readonly onclick="this.select()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:monospace;min-height:50px;resize:none">'+link+'</textarea></div><button class="btn btn-primary btn-block" onclick="copyInviteLink()">📋 复制链接</button><button class="btn btn-outline btn-block" onclick="closeModal()">关闭</button>';
-}
 
-function copyInviteLink(){
-  const box=document.getElementById("inviteLinkBox");
-  if(!box)return;
-  box.select();
-  document.execCommand("copy");
-  alert("已复制！");
-}
 
 function showInvite(){
   if(!userAddr)return;
